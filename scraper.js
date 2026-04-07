@@ -1,30 +1,52 @@
-/* https://www.scrapingbee.com/blog/web-scraping-javascript/ */
+import { chromium } from 'playwright';
 
-import * as cheerio from 'cheerio';
+async function scrapeFavourites(username) {
+  const browser = await chromium.launch();
+  const context = await browser.newContext(); // This is required for multiple pages
+  
+  const page = await context.newPage();
+  const allPages = context.pages(); // Only one page for my Letterboxd profile on its own
 
-const URL = "https://letterboxd.com/orangepickleguy/"; // Testing on my own account
+  page.setDefaultTimeout(10_000);
+  page.setDefaultNavigationTimeout(30_000);
 
-async function scrape() {
-    const response = await fetch(URL); // Async wait on URL to load
-    const html = await response.text(); // Async wait for html translation
+  await page.goto(`https://letterboxd.com/${username}/`, { waitUntil: 'domcontentloaded' });
+  await page.waitForSelector('.favourite-production-poster-container .frame-title');
+ // This is where we get the film titles in my favourites bar
 
-    const $ = cheerio.load(html); // Loads html into cheerio
-    const favourites = []; // Gonna store user's favs in this list
+  const titles = await page.locator('.favourite-production-poster-container .frame-title').evaluateAll(
+    els => els.map(el => el.textContent)
+  );
 
-    $('div.favourite-production-poster-container div.react-component').each((_i, el) => { // Should IDEALLY parse all favourites
-        /* don't need to go down every subclass!*/
-        
-        
-        
-        /* REALLY INTERESTING because I had the right idea, but apparently the info is actually rendered on the client side or something? Either way, it looks like I need to read the meta tags instead in order to get the film titles */
-        const film_name_and_year = $(el).attr('data-item-name');
+  const nerdTitles = await page.$$eval('.favourite-production-poster-container .frame-title', els =>
+    els.map(el => el.closest('a').getAttribute('href').split('/')[3]) // Want to get the third element from the split (contains film title)
+  );
 
-        // Still need to find a way to get the highest res movie poster for each film
+  const posterLinks = []; // Initialize outside of for-loop
 
-        favourites.push(film_name_and_year);
+  for (let i = 0; i < nerdTitles.length; i++) {
+    await page.goto(`https://letterboxd.com/film/${nerdTitles[i]}/`, { waitUntil: 'domcontentloaded' });
+
+    await page.evaluate(() => { // Runs a function inside of the headless browser
+      document.querySelector('#poster-modal').style.display = 'block'; // Sets the HD poster visible, so that we can inspect element the shit out of it (in theory)
     });
 
-    console.log(JSON.stringify(favourites, null, 2));
+    posterLinks[i] = await page.$eval('#poster-modal img.image', el => el.getAttribute('src'));
+  }
+
+  await browser.close();
+  return { titles, posterLinks };
 }
 
-await scrape();
+async function main() {
+  const { titles, posterLinks } = await scrapeFavourites('orangepickleguy');
+
+  
+
+  console.log(titles);
+  console.log(posterLinks);
+
+  // Want to add logic to sift through all the reviews next
+}
+
+main();

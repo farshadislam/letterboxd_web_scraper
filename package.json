@@ -1,17 +1,21 @@
 {
   "dependencies": {
     "cheerio": "^1.2.0",
+    "jsdom": "^29.0.1",
+    "playwright": "^1.58.2",
     "puppeteer": "^24.38.0"
   },
   "name": "letterboxd-webscraper",
   "version": "1.0.0",
   "description": "",
   "main": "scraper.js",
-  "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1"
-  },
+  "scripts": {},
   "keywords": [],
   "author": "",
   "license": "ISC",
-  "type": "module"
+  "type": "module",
+  "devDependencies": {
+    "@playwright/test": "^1.58.2",
+    "@types/node": "^25.5.0"
+  }
 }
