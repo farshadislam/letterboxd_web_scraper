@@ -1,4 +1,7 @@
-import { chromium } from 'playwright';
+// import { chromium } from 'playwright';
+import { chromium } from 'playwright-extra';
+import StealthPlugin from 'puppeteer-extra-plugin-stealth';
+
 
 async function scrapeFavourites(username) {
   const browser = await chromium.launch();
@@ -36,17 +39,17 @@ async function scrapeFavourites(username) {
 
     posterLinks[i] = await page.$eval('#poster-modal img.image', el => el.getAttribute('srcset'));
   }
-
+*/
   await browser.close();
-  */
+  
   return { titles };
 }
 
 async function scrapeReviews(username) {
   // const browser = await chromium.launch();
-  //const browser = await chromium.launch({ channel: 'chrome' });
+  // const context = await browser.newContext();
+  chromium.use(StealthPlugin());
 
-  //const context = await browser.newContext(); // This is required for multiple pages
   const context = await chromium.launchPersistentContext('./browser-session', {
     headless: false,
   });
@@ -66,7 +69,7 @@ async function scrapeReviews(username) {
       els => els.map(el => { // This will already isolate each individual instance of the locator tag
         const nodeOfReview = el.querySelectorAll("p"); // Unpacks every p tag within each review into a NodeList
 
-        let concatReview = ""
+        let concatReview = "";
 
         for (let i = 0; i < nodeOfReview.length; i++) {
           let paragraph = nodeOfReview.item(i).textContent; // Get the text content of each paragraph (every item is a DOM element that can be treated as a standard tag in HTML)
@@ -78,7 +81,9 @@ async function scrapeReviews(username) {
       }
     ));
 
-  return { pageOneReviews };
+  
+  await browser.close()
+    return { pageOneReviews };
 }
 
 async function main() {

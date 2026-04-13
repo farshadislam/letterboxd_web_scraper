@@ -1,0 +1,1 @@
+/* This actually seems way more fucking practical because now I can just grab all the information off of the account in a few pages, then do whatever the fuck I want on each one. Still going to be an issue if I want to check out the specialized movie posters though. */

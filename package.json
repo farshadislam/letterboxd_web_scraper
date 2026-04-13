@@ -4,7 +4,9 @@
     "express": "^5.2.1",
     "jsdom": "^29.0.1",
     "playwright": "^1.58.2",
-    "puppeteer": "^24.38.0"
+    "playwright-extra": "^4.3.6",
+    "puppeteer": "^24.38.0",
+    "puppeteer-extra-plugin-stealth": "^2.11.2"
   },
   "name": "letterboxd-webscraper",
   "version": "1.0.0",
