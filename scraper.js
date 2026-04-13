@@ -43,39 +43,50 @@ async function scrapeFavourites(username) {
 }
 
 async function scrapeReviews(username) {
-  const browser = await chromium.launch();
-  const context = await browser.newContext(); // This is required for multiple pages
-  const allPages = context.pages(); // Should be two pages for how many reviews I've written
+  // const browser = await chromium.launch();
+  //const browser = await chromium.launch({ channel: 'chrome' });
+
+  //const context = await browser.newContext(); // This is required for multiple pages
+  const context = await chromium.launchPersistentContext('./browser-session', {
+    headless: false,
+  });
 
   const firstPage = await context.newPage();
   await firstPage.goto(`https://letterboxd.com/${username}/reviews/`, { waitUntil: 'domcontentloaded' });
   
   // When a DOM element has spaces in the class name, that means it's been assigned multiple classes
 
-  const reviews = await page.locator('.js-listitem .js-review .collapsed-text').evaluateAll(
-    els => {
-      const stupid = []
+  
+  await firstPage.locator('.reveal').evaluateAll(els => els.forEach(el => el.click())); // Click all "more" links to expand them first
 
-      // Implement the logic to unpack every instance of more and then store every review on the page
+  await firstPage.waitForSelector('.js-listitem .js-review .body-text'); // better than isVisible because it actually waits for it to be visible and won't continue otherwise
+  console.log('Actually found the fucking tags bro');
 
-      // Fidn every more tag
-      // click on it or expand some fucking how
-      // unpack every p tag
-      // concatenate into a full review
-      // push to stupid list
+  const pageOneReviews = await firstPage.locator('.js-listitem .js-review .body-text').evaluateAll(
+      els => els.map(el => { // This will already isolate each individual instance of the locator tag
+        const nodeOfReview = el.querySelectorAll("p"); // Unpacks every p tag within each review into a NodeList
 
-      return stupid;
-    }
-  );
+        let concatReview = ""
+
+        for (let i = 0; i < nodeOfReview.length; i++) {
+          let paragraph = nodeOfReview.item(i).textContent; // Get the text content of each paragraph (every item is a DOM element that can be treated as a standard tag in HTML)
+
+          concatReview.concat('', paragraph); // Append onto concatReview
+        }
+
+        return concatReview; // Return the entire text content and then push it onto the reviews list
+      }
+    ));
+
+  return { pageOneReviews };
 }
 
 async function main() {
   const { titles } = await scrapeFavourites('orangepickleguy');
   console.log(titles);
 
-  // Want to add logic to sift through all the reviews next
-
-  
+  const { pageOneReviews } = await scrapeReviews('orangepickleguy');
+  console.log(pageOneReviews);
 }
 
 main();
