@@ -1,5 +1,6 @@
-import { chromium } from 'playwright-extra';
-import StealthPlugin from 'puppeteer-extra-plugin-stealth';
+import { chromium } from 'playwright-extra'; // Same thing as just "playwright" but with some extra features (we'll see if I actually need them)
+import StealthPlugin from 'puppeteer-extra-plugin-stealth'; // We'll see if this gets used at all
+import 'dotenv/config';
 import Worker from 'worker_threads';
 
 function addWorker(nameOfMovie) {
@@ -20,9 +21,33 @@ function addWorker(nameOfMovie) {
     });
 }
 
+function convertProxyToPlaywrightFormat(proxyUrl) {
+    const url = new URL(proxyUrl);
+    return {
+        server: `${url.protocol}//${url.host}`,
+        username: url.username,
+        password: url.password
+    };
+}
+
 async function scrapeFilmPosters(movieTitles) {
-    const browser = await chromium.launch();
-    const page = await browser.newPage();
+    const proxyUrl = process.env.PROXY_URL; // Generates proxy?
+
+    if (!proxyUrl) {
+        console.error('Proxy URL not found in .env file');
+        process.exit(1);
+    }
+
+    const proxyOptions = convertProxyToPlaywrightFormat(proxyUrl);
+    const browser = await chromium.launch({
+        proxy: proxyOptions,
+    });
+
+    try {
+        const page = await browser.newPage();
+    } catch (error) {
+        console.error(`Failed to navigate: ${error.message}`);
+    }
 
     const workerPromises = [];
 
@@ -39,6 +64,8 @@ async function scrapeFilmPosters(movieTitles) {
     await browser.close();
     return { imageLinks };
 }
+
+
 
 async function main() {
     let movieTitles = ['barry-lyndon', 'autumn-sonata', 'happiness', 'the-king-of-comedy']

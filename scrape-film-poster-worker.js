@@ -6,6 +6,8 @@ let result = 0;
 
 /* This is where all the code goes scraping each individual file, which I should probably figure out first */
 
+await tryNavigate(page, 'http://example.com');
+
 parentPort.postMessage(result); // This gets to stay, but the above implementation needs to change
 
 await page.goto(`https://letterboxd.com/film/${movieTitle}/`, { waitUntil: 'domcontentloaded' });

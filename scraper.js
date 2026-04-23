@@ -1,7 +1,7 @@
 // import { chromium } from 'playwright';
 import { chromium } from 'playwright-extra';
 import StealthPlugin from 'puppeteer-extra-plugin-stealth';
-
+import fs from 'node:fs';
 
 async function scrapeFavourites(username) {
   const browser = await chromium.launch();
@@ -46,8 +46,6 @@ async function scrapeFavourites(username) {
 }
 
 async function scrapeReviews(username) {
-  // const browser = await chromium.launch();
-  // const context = await browser.newContext();
   chromium.use(StealthPlugin());
 
   const context = await chromium.launchPersistentContext('./browser-session', {
@@ -60,10 +58,15 @@ async function scrapeReviews(username) {
   // When a DOM element has spaces in the class name, that means it's been assigned multiple classes
 
   
-  await firstPage.locator('.reveal').evaluateAll(els => els.forEach(el => el.click())); // Click all "more" links to expand them first
-
-  await firstPage.waitForSelector('.js-listitem .js-review .body-text'); // better than isVisible because it actually waits for it to be visible and won't continue otherwise
+  await firstPage.waitForSelector('.js-listitem .js-review .body-text');
   console.log('Actually found the fucking tags bro');
+
+  // Click each "...more" link sequentially and wait for actionability
+  const revealLinks = firstPage.locator('a.reveal');
+  const revealCount = await revealLinks.count();
+  for (let i = 0; i < revealCount; i++) {
+    await revealLinks.nth(i).click();
+  }
 
   const pageOneReviews = await firstPage.locator('.js-listitem .js-review .body-text').evaluateAll(
       els => els.map(el => { // This will already isolate each individual instance of the locator tag
@@ -74,7 +77,7 @@ async function scrapeReviews(username) {
         for (let i = 0; i < nodeOfReview.length; i++) {
           let paragraph = nodeOfReview.item(i).textContent; // Get the text content of each paragraph (every item is a DOM element that can be treated as a standard tag in HTML)
 
-          concatReview.concat('', paragraph); // Append onto concatReview
+          concatReview += paragraph; // Append onto concatReview
         }
 
         return concatReview; // Return the entire text content and then push it onto the reviews list
@@ -82,16 +85,34 @@ async function scrapeReviews(username) {
     ));
 
   
-  await browser.close()
-    return { pageOneReviews };
+  await context.close();
+  return { pageOneReviews };
 }
 
 async function main() {
-  const { titles } = await scrapeFavourites('orangepickleguy');
+  // Source - https://stackoverflow.com/a/4482701
+// Posted by T.J. Crowder, modified by community. See post 'Timeline' for change history
+// Retrieved 2026-04-23, License - CC BY-SA 4.0
+
+const dir = 'browser-session';
+
+if (fs.existsSync(dir)) {
+  fs.rm(dir, {recursive: true}, err => {
+    if (err) {
+      console.log(err);
+    }
+
+    console.log(`${dir} is deleted!`);
+  }); 
+}
+
+const { titles } = await scrapeFavourites('orangepickleguy');
   console.log(titles);
 
   const { pageOneReviews } = await scrapeReviews('orangepickleguy');
   console.log(pageOneReviews);
+
+  
 }
 
 main();
