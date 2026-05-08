@@ -5,8 +5,8 @@ import fs from 'node:fs';
 const REVIEWS_PER_PAGE = 12;
 
 async function scrapeFavourites(username) {
-    const browser = await chromium.launch();
-    const page = await browser.newPage();
+    const browser = await chromium.launch(); // Opens browser
+    const page = await browser.newPage(); // Opens a page
 
     page.setDefaultTimeout(10_000);
     page.setDefaultNavigationTimeout(30_000);
@@ -32,43 +32,41 @@ async function scrapeFavourites(username) {
     return { titles };
 }
 
+function delay(ms) {
+  return new Promise(resolve => setTimeout(resolve, ms));
+}
+
 async function scrapeReviews(username) {
     chromium.use(StealthPlugin());
 
-    const context = await chromium.launchPersistentContext('./browser-session');
+    const context = await chromium.launchPersistentContext('./browser-session', {headless: true});
 
     const firstPage = await context.newPage();
-    await firstPage.goto(`https://letterboxd.com/${username}/reviews`, { waitUntil: 'domcontentloaded' });
+    await firstPage.goto(`https://letterboxd.com/${username}/reviews/films/page/2/`, { waitUntil: 'domcontentloaded' });
+    
 
     // When a DOM element has spaces in the class name, that means it's been assigned multiple classes
-    await firstPage.waitForSelector('.js-listitem .js-review .body-text');
-    console.log('Successfully identified review body selector!');
 
-    let revealsRemaining = await firstPage.locator('a.reveal').count(); // Finds out how many reviews have a "...more" reveal tag
-    console.log(`Starting "click" sequence with ${revealsRemaining} reveal links...`)
+    console.log('Clicking every instance of a reveal link on the page...');
+    /* for (const revealLink of await firstPage.locator('a.reveal').all()) {
+        await revealLink.click();
+    } */
+
+    let revealsRemaining = await firstPage.locator('a.reveal').count();
 
     while (revealsRemaining > 0) {
-        let revealLink = firstPage.locator('a.reveal').first(); // Identifies the first available selector with a "...more" tag
-        await revealLink.click(); // Initiate the click action (DOES NOT GUARANTEE THE SELECTOR WAS CLICKED)
-        // await revealLink.waitFor( { state : 'hidden'} ); // Once clicked, the selector vanishes, which is confirmed by this line
+        let revealLink = firstPage.locator('a.reveal').first();
+        await revealLink.click();
         revealsRemaining--;
     }
 
-    const pageOneReviews = await firstPage.locator('.js-listitem .js-review .body-text').evaluateAll(
-        els => els.map(el => { // This will already isolate each individual instance of the locator tag
-            const nodeOfReview = el.querySelectorAll("p"); // Unpacks every p tag within each review into a NodeList
+    console.log('Pushing every review as a string into the returning list...');
+    const pageOneReviews = [];
 
-            let concatReview = "";
-
-            for (let i = 0; i < nodeOfReview.length; i++) {
-                let paragraph = nodeOfReview.item(i).textContent; // Get the text content of each paragraph (every item is a DOM element that can be treated as a standard tag in HTML)
-
-                concatReview += paragraph; // Append onto concatReview
-            }
-
-            return concatReview; // Return the entire text content and then push it onto the reviews list
-        }
-    ));
+    await delay(3000);
+    for (const review of await firstPage.locator('.js-review-body').all()) {
+        pageOneReviews.push(await review.textContent());
+    }
 
     await context.close();
     return { pageOneReviews };
@@ -86,8 +84,8 @@ async function main() {
         console.log(`"${dir}" was deleted!`);
     }
 
-    const { titles } = await scrapeFavourites('orangepickleguy');
-    console.log(titles);
+    // const { titles } = await scrapeFavourites('orangepickleguy');
+    // console.log(titles);
 
     const { pageOneReviews } = await scrapeReviews('orangepickleguy');
     console.log(pageOneReviews);

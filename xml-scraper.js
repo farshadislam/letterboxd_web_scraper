@@ -1,5 +1,19 @@
-/* This actually seems way more fucking practical because now I can just grab all the information off of the account in a few pages, then do whatever the fuck I want on each one. Still going to be an issue if I want to check out the specialized movie posters though. */
+// Source - https://stackoverflow.com/a/79935329
+// Posted by ggorlen, modified by community. See post 'Timeline' for change history
+// Retrieved 2026-05-04, License - CC BY-SA 4.0
 
-import { chromium } from 'playwright-extra';
-import StealthPlugin from 'puppeteer-extra-plugin-stealth';
+// const playwright = require("playwright"); // ^1.58.0
+import playwright from 'playwright';
+
+let browser;
+(async () => {
+  browser = await playwright.chromium.launch({headless: false});
+  const page = await browser.newPage();
+  const url = "https://letterboxd.com/itscharlibb/film/erupcja/2/";
+  await page.goto(url, {waitUntil: "domcontentloaded"});
+  console.log(await page.locator(".js-review-body").textContent());
+})()
+  .catch(err => console.error(err))
+  .finally(() => browser?.close());
+
 
