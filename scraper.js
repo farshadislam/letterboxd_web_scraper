@@ -63,7 +63,7 @@ async function scrapeReviews(username) {
     console.log('Pushing every review as a string into the returning list...');
     const pageOneReviews = [];
 
-    await delay(3000);
+    await delay(1500);
     for (const review of await firstPage.locator('.js-review-body').all()) {
         pageOneReviews.push(await review.textContent());
     }
