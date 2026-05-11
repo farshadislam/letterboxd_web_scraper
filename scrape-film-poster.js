@@ -42,6 +42,7 @@ async function scrapeFilmPosters(movieTitles) {
     const browser = await chromium.launch({
         proxy: proxyOptions,
     });
+    console.log('Ran convertProxyToPlaywrightFormat...')
 
     try {
         const page = await browser.newPage();

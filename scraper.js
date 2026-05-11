@@ -36,7 +36,7 @@ function delay(ms) {
   return new Promise(resolve => setTimeout(resolve, ms));
 }
 
-async function scrapeReviews(username) {
+async function scrapePageOneReviews(username) {
     chromium.use(StealthPlugin());
 
     const context = await chromium.launchPersistentContext('./browser-session', {headless: true});
@@ -48,9 +48,6 @@ async function scrapeReviews(username) {
     // When a DOM element has spaces in the class name, that means it's been assigned multiple classes
 
     console.log('Clicking every instance of a reveal link on the page...');
-    /* for (const revealLink of await firstPage.locator('a.reveal').all()) {
-        await revealLink.click();
-    } */
 
     let revealsRemaining = await firstPage.locator('a.reveal').count();
 
@@ -61,15 +58,38 @@ async function scrapeReviews(username) {
     }
 
     console.log('Pushing every review as a string into the returning list...');
-    const pageOneReviews = [];
+    // const pageOneReviews = [];
 
     await delay(1500);
-    for (const review of await firstPage.locator('.js-review-body').all()) {
-        pageOneReviews.push(await review.textContent());
-    }
+    
+    const pageOneReviews = await firstPage.locator('.js-review-body').evaluateAll(
+        els => els.map(el => { // This will already isolate each individual instance of the locator tag
+            const nodeOfReview = el.querySelectorAll("p"); // Unpacks every p tag within each review into a NodeList
+
+            let concatReview = "";
+
+            for (let i = 0; i < nodeOfReview.length; i++) {
+                let paragraph = nodeOfReview.item(i).textContent; // Get the text content of each paragraph (every item is a DOM element that can be treated as a standard tag in HTML)
+
+                concatReview += paragraph; // Append onto concatReview
+
+                if (i != nodeOfReview.length - 1)
+                    concatReview += '\n';
+            }
+
+            return concatReview; // Return the entire text content and then push it onto the reviews list
+        }
+    ));
 
     await context.close();
     return { pageOneReviews };
+}
+
+async function scrapeAllTheirReviews(username) {
+    chromium.use(StealthPlugin());
+    const context = await chromium.launchPersistentContext('./browser-session', {headless: true});
+
+    
 }
 
 async function main() {
@@ -87,7 +107,7 @@ async function main() {
     // const { titles } = await scrapeFavourites('orangepickleguy');
     // console.log(titles);
 
-    const { pageOneReviews } = await scrapeReviews('orangepickleguy');
+    const { pageOneReviews } = await scrapePageOneReviews('orangepickleguy');
     console.log(pageOneReviews);
 }
 
