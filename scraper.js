@@ -87,10 +87,45 @@ async function scrapePageOneReviews(username) {
 
 async function scrapeAllTheirReviews(username) {
     chromium.use(StealthPlugin());
-    const context = await chromium.launchPersistentContext('./browser-session', {headless: true});
+    const context = await chromium.launchPersistentContext('./browser-session', { headless: true });
+    const page = await context.newPage();
+    const allReviews = [];
+    let pageNum = 1;
 
-    
+    while (true) {
+        await page.goto(`https://letterboxd.com/${username}/reviews/films/page/${pageNum}/`, { waitUntil: 'domcontentloaded' });
+
+        const reviewCount = await page.locator('.js-review-body').count();
+        if (reviewCount === 0) {
+            pageNum--; // This is how many pages actually have reviews on them
+            break;
+        }
+
+        pageNum++;
+        // // expand truncated reviews
+        // let revealsRemaining = await page.locator('a.reveal').count();
+        // while (revealsRemaining > 0) {
+        //     await page.locator('a.reveal').first().click();
+        //     revealsRemaining--;
+        // }
+
+        // await delay(1500);
+
+        // const reviews = await page.locator('.js-review-body').evaluateAll(els =>
+        //     els.map(el => {
+        //         const paras = el.querySelectorAll('p');
+        //         return Array.from(paras).map(p => p.textContent).join('\n');
+        //     })
+        // );
+
+        // allReviews.push(...reviews);
+    }
+
+    await context.close();
+
+    console.log(pageNum);
 }
+
 
 async function main() {
     // Source - https://stackoverflow.com/a/4482701
@@ -107,8 +142,10 @@ async function main() {
     // const { titles } = await scrapeFavourites('orangepickleguy');
     // console.log(titles);
 
-    const { pageOneReviews } = await scrapePageOneReviews('orangepickleguy');
-    console.log(pageOneReviews);
+    // const { pageOneReviews } = await scrapePageOneReviews('orangepickleguy');
+    // console.log(pageOneReviews);
+
+    await scrapeAllTheirReviews('orangepickleguy');
 }
 
 main();
