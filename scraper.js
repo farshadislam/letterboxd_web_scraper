@@ -156,26 +156,6 @@ async function scrapeAllReviewsNoWorkers(username) {
     return allReviews;
 }
 
-// function addReviewScraper(reviewPageURL) {
-//     const allReviewsOnPage = new Promise((resolve, reject) => {
-//         const reviewWorker = new Worker('./worker-optimized.js', {
-//             workerData: {
-//                 reviewPageURL: reviewPageURL,
-//             },
-//         });
-
-//         reviewWorker.on("message", (data) => {
-//             resolve(data);
-//         });
-
-//         reviewWorker.on("error", (err) => {
-//             reject(`An error occured : ${err}`);
-//         });
-//     });
-
-//     return allReviewsOnPage;
-// }
-
 async function scrapeAllTheirReviews(username) {
     chromium.use(StealthPlugin());
     const context = await chromium.launchPersistentContext('./browser-session', { headless: true });

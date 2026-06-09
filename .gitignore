@@ -7,3 +7,5 @@
 /playwright/.cache/
 /playwright/.auth/
 /browser-session/
+.env
+.env.*
