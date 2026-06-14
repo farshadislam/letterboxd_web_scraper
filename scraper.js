@@ -1,6 +1,7 @@
 import { chromium } from 'playwright-extra';
 import StealthPlugin from 'puppeteer-extra-plugin-stealth';
 import fs from 'node:fs';
+import { argv } from 'node:process';
 
 // const express = require("express");
 // const { Worker } = require("worker_threads");
@@ -196,13 +197,15 @@ async function main() {
         console.log(`"${dir}" was deleted!`);
     }
 
+    const inputUsername = argv[2];
+
     // const { titles } = await scrapeFavourites('orangepickleguy');
     // console.log(titles);
 
     // const { pageOneReviews } = await scrapePageOneReviews('orangepickleguy');
     // console.log(pageOneReviews);
 
-    const { allReviews } = await scrapeAllReviewsNoWorkers('orangepickleguy');
+    await scrapeAllReviewsNoWorkers(inputUsername);
     // console.log(allReviews);
 }
 
