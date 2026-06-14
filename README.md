@@ -10,5 +10,4 @@ Once it opens the Letterboxd profile in a headless browser, it goes through each
 cut off prematurely, but nonetheless, it scrapes every movie review on their profile, and displays the string data it recieved in the console.
 
 ## Plans for the future
-Probably going to try and make optimizations wherever possible, and get the multi-threading implementation working properly without any bugs. There are some tests that are auto-failing every time I push to the main repository, which I should also inspect, but I left those untouched
-because I just wanted to focus on learning the technology.
+I'd like to see if there's a way for me to take the information I'm getting from all the reviews, and make a sophisticated graph display via Vercel, or even make movie recommendations based on the sorts of attributes that people respond most to.
