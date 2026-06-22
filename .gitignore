@@ -4,6 +4,7 @@
 /test-results/
 /playwright-report/
 /blob-report/
+/worker-threads-baseline
 /playwright/.cache/
 /playwright/.auth/
 /browser-session/

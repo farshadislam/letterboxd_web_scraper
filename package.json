@@ -4,6 +4,7 @@
     "@playwright/test": "^1.60.0"
   },
   "dependencies": {
+    "convert-array-to-csv": "^2.0.0",
     "playwright-extra": "^4.3.6",
     "puppeteer-extra-plugin-stealth": "^2.11.2"
   }
