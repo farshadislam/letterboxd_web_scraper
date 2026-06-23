@@ -8,7 +8,7 @@ function delay(ms) {
   return new Promise(resolve => setTimeout(resolve, ms));
 }
 
-async function scrapeAllReviewsNoWorkers(username) {
+async function scrapeAllReviewsSingleThreaded(username) {
     chromium.use(StealthPlugin());
     const context = await chromium.launchPersistentContext('./browser-session', { headless: true });
     console.log('Loaded up new browser session!');
@@ -85,6 +85,30 @@ async function scrapeAllReviewsNoWorkers(username) {
     return allReviews;
 }
 
+async function scrapeAllReviewsMultiThreaded(username) {
+    chromium.use(StealthPlugin());
+    const context = await chromium.launchPersistentContext('./browser-session', { headless: true });
+    const page = await context.newPage();
+    const allReviews = [];
+
+    let numPages = 1;
+    
+    await page.goto(`https://letterboxd.com/${username}/reviews/`, { waitUntil: 'domcontentloaded' });
+
+    const multiplePages = await page.locator('.paginate-pages ul li:last-child a').isVisible();
+    if (multiplePages) {
+        numPages = parseInt(await page.locator('.paginate-pages ul li:last-child a').textContent());
+    }
+    
+    console.log(numPages);
+    // const reviewPromises = [];
+    // for (let i = 0; i < numPages; i++) {
+        
+    // }
+
+    await context.close();
+}
+
 async function main() {
     // Source - https://stackoverflow.com/a/4482701
     // Posted by T.J. Crowder, modified by community. See post 'Timeline' for change history
@@ -100,10 +124,15 @@ async function main() {
     const inputUsername = argv[2];
     const header = ["Film Title", "Year Released", "Star Rating", "Date Reviewed", "Full Review"];
 
-    const allReviews = await scrapeAllReviewsNoWorkers(inputUsername);
-    const csv = convertArrayToCSV(allReviews, {header, separator: ","});
+    const allReviews = (await scrapeAllReviewsSingleThreaded(inputUsername)).flat();
+    const csv = convertArrayToCSV(allReviews, {header: header, separator: ","});
     await fs.promises.writeFile(`reviews-by-${inputUsername}.csv`, csv, 'utf-8');
     console.log(`Written to reviews-by-${inputUsername}.csv`);
+
+    await fs.promises.writeFile(`reviews-by-${inputUsername}.json`, JSON.stringify(allReviews, null, 2), 'utf-8');
+    console.log(`Written to reviews-by-${inputUsername}.json`);
+
+    // scrapeAllReviewsMultiThreaded(inputUsername);
 }
 
 main();
