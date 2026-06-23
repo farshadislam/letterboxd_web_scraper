@@ -10,3 +10,4 @@
 /browser-session/
 .env
 .env.*
+film-image-extract.js
