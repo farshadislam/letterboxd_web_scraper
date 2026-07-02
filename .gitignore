@@ -4,10 +4,20 @@
 /test-results/
 /playwright-report/
 /blob-report/
-/worker-threads-baseline
 /playwright/.cache/
 /playwright/.auth/
+
+# Runtime artifacts
 /browser-session/
+/worker-threads-baseline/
+
+# Scraper output
+reviews-by-*.csv
+reviews-by-*.json
+
+# Experiments
+film-image-extract.js
+
+# Env
 .env
 .env.*
-film-image-extract.js

@@ -1,5 +1,11 @@
 {
+  "name": "letterboxd-scraper",
+  "version": "1.0.0",
+  "description": "Scrapes all reviews from a Letterboxd profile and exports them to CSV and JSON.",
   "type": "module",
+  "scripts": {
+    "scrape": "node scraper.js"
+  },
   "devDependencies": {
     "@playwright/test": "^1.60.0"
   },
