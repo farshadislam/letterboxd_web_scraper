@@ -85,28 +85,63 @@ async function scrapeAllReviewsSingleThreaded(username) {
     return allReviews;
 }
 
+async function scrapeOnePage(context, username, pageNum) {
+    const page = await context.newPage();
+    await page.goto(`https://letterboxd.com/${username}/reviews/films/page/${pageNum}/`, { waitUntil: 'domcontentloaded' });
+    console.log(`Scraping page ${pageNum}...`);
+
+    await page.evaluate(() => window.scrollTo(0, document.body.scrollHeight));
+    await delay(500);
+    let revealsRemaining = await page.locator('.reveal:visible').count();
+    while (revealsRemaining > 0) {
+        await page.locator('.reveal:visible').first().click();
+        revealsRemaining--;
+    }
+    await delay(500);
+
+    const reviews = await page.locator('.js-listitem').evaluateAll(
+        els => els.map(el => {
+            const reviewElement = el.querySelectorAll(".js-review-body p");
+            let concatReview = "";
+            for (let i = 0; i < reviewElement.length; i++) {
+                concatReview += reviewElement.item(i).textContent;
+                if (i != reviewElement.length - 1) concatReview += '\n';
+            }
+            return {
+                "filmTitle"   : el.querySelector(".primaryname a")?.textContent.trim() ?? '',
+                "yearReleased": el.querySelector(".releasedate a")?.textContent.trim() ?? '',
+                "rating"      : el.querySelector(".-rating title")?.textContent.trim() ?? '',
+                "reviewDate"  : el.querySelector(".timestamp")?.getAttribute("datetime") ?? '',
+                "fullReview"  : concatReview
+            };
+        })
+    );
+
+    await page.close();
+    return reviews;
+}
+
 async function scrapeAllReviewsMultiThreaded(username) {
     chromium.use(StealthPlugin());
     const context = await chromium.launchPersistentContext('./browser-session', { headless: true });
     const page = await context.newPage();
-    const allReviews = [];
 
     let numPages = 1;
-    
     await page.goto(`https://letterboxd.com/${username}/reviews/`, { waitUntil: 'domcontentloaded' });
-
     const multiplePages = await page.locator('.paginate-pages ul li:last-child a').isVisible();
     if (multiplePages) {
         numPages = parseInt(await page.locator('.paginate-pages ul li:last-child a').textContent());
     }
-    
-    console.log(numPages);
-    // const reviewPromises = [];
-    // for (let i = 0; i < numPages; i++) {
-        
-    // }
+    await page.close();
 
+    const promises = [];
+    for (let i = 1; i <= numPages; i++) {
+        promises.push(scrapeOnePage(context, username, i));
+    }
+
+    const results = await Promise.all(promises);
     await context.close();
+    return results.flat();
 }
 
 async function main() {
@@ -124,15 +159,15 @@ async function main() {
     const inputUsername = argv[2];
     const header = ["Film Title", "Year Released", "Star Rating", "Date Reviewed", "Full Review"];
 
-    const allReviews = (await scrapeAllReviewsSingleThreaded(inputUsername)).flat();
+    let time = Date.now();
+
+    const allReviews = await scrapeAllReviewsMultiThreaded(inputUsername);
     const csv = convertArrayToCSV(allReviews, {header: header, separator: ","});
-    await fs.promises.writeFile(`reviews-by-${inputUsername}.csv`, csv, 'utf-8');
-    console.log(`Written to reviews-by-${inputUsername}.csv`);
+    await fs.promises.writeFile(`reviews-by-${inputUsername}-${time}.csv`, csv, 'utf-8');
+    console.log(`Written to reviews-by-${inputUsername}-${time}.csv`);
 
-    await fs.promises.writeFile(`reviews-by-${inputUsername}.json`, JSON.stringify(allReviews, null, 2), 'utf-8');
-    console.log(`Written to reviews-by-${inputUsername}.json`);
-
-    // scrapeAllReviewsMultiThreaded(inputUsername);
+    await fs.promises.writeFile(`reviews-by-${inputUsername}-${time}.json`, JSON.stringify(allReviews, null, 2), 'utf-8');
+    console.log(`Written to reviews-by-${inputUsername}-${time}.json`);
 }
 
 main();
